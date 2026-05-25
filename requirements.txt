@@ -1,0 +1,20 @@
+# requirements.txt
+# ─────────────────────────────────────────────────────────────────
+# Sentiment Classification Project — Dependency Manifest
+# Install with:  pip install -r requirements.txt
+# ─────────────────────────────────────────────────────────────────
+
+# Core ML / NLP
+transformers>=4.38.0        # HuggingFace Transformers (pipeline API)
+torch>=2.1.0                # PyTorch backend for transformers
+
+# Evaluation
+scikit-learn>=1.4.0         # accuracy, precision, recall, f1
+pandas>=2.1.0               # CSV I/O and DataFrame operations
+
+# Web Application
+streamlit>=1.32.0           # Interactive UI framework
+
+# Utilities
+sentencepiece>=0.1.99       # Required by some tokenizers (e.g. RoBERTa)
+protobuf>=3.20.0            # Required by sentencepiece on some platforms
