@@ -13,14 +13,14 @@ import streamlit as st
 from transformers import pipeline
 
 # ─────────────────────────────────────────────
-# Page Configuration  (must be the first st call)
+# Page Configuration
 # ─────────────────────────────────────────────
 
 st.set_page_config(
     page_title="Sentiment Classifier",
     page_icon="🧠",
     layout="wide",
-    initial_sidebar_state="expanded",
+    initial_sidebar_state="collapsed",
 )
 
 # ─────────────────────────────────────────────
@@ -51,10 +51,11 @@ def inject_styles(dark: bool):
             --accent-red:     #f85149;
             --accent-blue:    #58a6ff;
             --accent-orange:  #d29922;
-            --accent-glow-g:  rgba(63, 185, 80, 0.15);
-            --accent-glow-r:  rgba(248, 81, 73, 0.15);
+            --accent-glow-g:  rgba(63, 185, 80, 0.12);
+            --accent-glow-r:  rgba(248, 81, 73, 0.12);
             --shadow:         0 8px 32px rgba(0,0,0,0.4);
             --shadow-sm:      0 2px 8px rgba(0,0,0,0.3);
+            --nav-bg:         #161b22;
         """
     else:
         palette = """
@@ -71,10 +72,11 @@ def inject_styles(dark: bool):
             --accent-red:     #cf222e;
             --accent-blue:    #0969da;
             --accent-orange:  #9a6700;
-            --accent-glow-g:  rgba(26, 127, 55, 0.08);
-            --accent-glow-r:  rgba(207, 34, 46, 0.08);
+            --accent-glow-g:  rgba(26, 127, 55, 0.07);
+            --accent-glow-r:  rgba(207, 34, 46, 0.07);
             --shadow:         0 8px 32px rgba(0,0,0,0.08);
-            --shadow-sm:      0 2px 8px rgba(0,0,0,0.06);
+            --shadow-sm:      0 2px 8px rgba(0,0,0,0.05);
+            --nav-bg:         #ffffff;
         """
 
     st.markdown(
@@ -82,94 +84,128 @@ def inject_styles(dark: bool):
         <style>
         @import url('https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500;600&family=Geist:wght@300;400;500;600&display=swap');
 
-        :root {{
-            {palette}
-        }}
+        :root {{ {palette} }}
 
-        /* ── Reset & Base ── */
-        html, body, [class*="css"],
-        .stApp, .block-container,
-        section[data-testid="stSidebar"] {{
+        /* ── Collapse sidebar arrow entirely ── */
+        [data-testid="collapsedControl"] {{ display: none !important; }}
+        section[data-testid="stSidebar"] {{ display: none !important; }}
+
+        /* ── Base ── */
+        html, body, [class*="css"], .stApp, .block-container {{
             font-family: 'Geist', sans-serif !important;
             background-color: var(--bg-base) !important;
             color: var(--text-primary) !important;
         }}
 
+        /* ── Wipe Streamlit chrome ── */
+        #MainMenu, footer, header[data-testid="stHeader"] {{
+            display: none !important;
+        }}
+
+        /* ── Main content area ── */
         .block-container {{
-            padding: 2rem 2.5rem 4rem !important;
-            max-width: 1100px !important;
+            padding: 0 !important;
+            max-width: 100% !important;
         }}
 
-        /* ── Sidebar ── */
-        section[data-testid="stSidebar"] {{
-            background-color: var(--bg-surface) !important;
-            border-right: 1px solid var(--border) !important;
-        }}
-        section[data-testid="stSidebar"] .block-container {{
-            padding: 2rem 1.5rem !important;
-        }}
-
-        /* ── Header Banner ── */
-        .app-header {{
+        /* ── Navbar ── */
+        .navbar {{
+            position: sticky;
+            top: 0;
+            z-index: 999;
             display: flex;
-            align-items: flex-start;
+            align-items: center;
             justify-content: space-between;
-            gap: 1.5rem;
-            padding: 2rem 2.5rem;
-            background: var(--bg-surface);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            margin-bottom: 2rem;
-            box-shadow: var(--shadow-sm);
-            position: relative;
-            overflow: hidden;
+            padding: 0 2.5rem;
+            height: 56px;
+            background: var(--nav-bg);
+            border-bottom: 1px solid var(--border);
+            backdrop-filter: blur(8px);
         }}
-        .app-header::before {{
-            content: '';
-            position: absolute;
-            top: 0; left: 0; right: 0;
-            height: 3px;
-            background: linear-gradient(90deg, var(--accent-green), var(--accent-blue));
+        .navbar-left {{
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
         }}
-        .app-header h1 {{
-            font-size: 1.6rem;
+        .navbar-brand {{
+            font-size: 0.95rem;
             font-weight: 600;
-            margin: 0 0 0.35rem;
-            letter-spacing: -0.02em;
             color: var(--text-primary);
+            letter-spacing: -0.01em;
         }}
-        .app-header p {{
-            margin: 0;
-            font-size: 0.82rem;
-            color: var(--text-secondary);
+        .navbar-version {{
             font-family: 'Geist Mono', monospace;
-            letter-spacing: 0.01em;
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 2px 6px;
         }}
-        .header-badge {{
+        .navbar-right {{
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }}
+        .live-badge {{
             display: inline-flex;
             align-items: center;
             gap: 0.35rem;
+            font-family: 'Geist Mono', monospace;
+            font-size: 0.68rem;
+            color: var(--text-secondary);
             background: var(--bg-card);
             border: 1px solid var(--border);
-            border-radius: 6px;
-            padding: 0.25rem 0.65rem;
-            font-family: 'Geist Mono', monospace;
-            font-size: 0.7rem;
-            color: var(--text-secondary);
-            white-space: nowrap;
+            border-radius: 20px;
+            padding: 3px 10px;
         }}
-        .header-badge .dot {{
-            width: 6px; height: 6px;
+        .live-dot {{
+            width: 5px; height: 5px;
             background: var(--accent-green);
             border-radius: 50%;
             animation: pulse 2s infinite;
         }}
         @keyframes pulse {{
             0%, 100% {{ opacity: 1; }}
-            50% {{ opacity: 0.4; }}
+            50% {{ opacity: 0.35; }}
         }}
 
-        /* ── Input Section ── */
+        /* ── Page body wrapper ── */
+        .page-body {{
+            max-width: 860px;
+            margin: 0 auto;
+            padding: 2.5rem 2rem 5rem;
+        }}
+
+        /* ── Page title ── */
+        .page-title {{
+            margin-bottom: 2rem;
+        }}
+        .page-title h1 {{
+            font-size: 1.75rem;
+            font-weight: 600;
+            letter-spacing: -0.03em;
+            color: var(--text-primary);
+            margin: 0 0 0.3rem;
+        }}
+        .page-title p {{
+            font-family: 'Geist Mono', monospace;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin: 0;
+        }}
+
+        /* ── Input card ── */
+        .input-card {{
+            background: var(--bg-surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.75rem;
+            margin-bottom: 1.5rem;
+            box-shadow: var(--shadow-sm);
+        }}
+
+        /* ── TextArea ── */
         .stTextArea textarea {{
             background: var(--bg-input) !important;
             border: 1px solid var(--border) !important;
@@ -179,6 +215,7 @@ def inject_styles(dark: bool):
             font-size: 0.9rem !important;
             resize: vertical !important;
             transition: border-color 0.2s !important;
+            padding: 0.75rem 1rem !important;
         }}
         .stTextArea textarea:focus {{
             border-color: var(--accent-blue) !important;
@@ -187,25 +224,31 @@ def inject_styles(dark: bool):
         }}
         .stTextArea label {{
             color: var(--text-secondary) !important;
-            font-size: 0.8rem !important;
-            font-weight: 500 !important;
+            font-size: 0.75rem !important;
+            font-weight: 600 !important;
             text-transform: uppercase !important;
-            letter-spacing: 0.06em !important;
+            letter-spacing: 0.08em !important;
         }}
 
         /* ── Selectbox ── */
         .stSelectbox label {{
             color: var(--text-secondary) !important;
-            font-size: 0.8rem !important;
-            font-weight: 500 !important;
+            font-size: 0.75rem !important;
+            font-weight: 600 !important;
             text-transform: uppercase !important;
-            letter-spacing: 0.06em !important;
+            letter-spacing: 0.08em !important;
         }}
         .stSelectbox > div > div {{
             background: var(--bg-input) !important;
             border: 1px solid var(--border) !important;
             border-radius: 8px !important;
             color: var(--text-primary) !important;
+        }}
+
+        /* ── Toggle ── */
+        .stToggle label {{
+            color: var(--text-secondary) !important;
+            font-size: 0.85rem !important;
         }}
 
         /* ── Buttons ── */
@@ -218,129 +261,105 @@ def inject_styles(dark: bool):
             font-weight: 600 !important;
             font-size: 0.85rem !important;
             letter-spacing: 0.02em !important;
-            padding: 0.6rem 1.2rem !important;
             transition: opacity 0.15s !important;
         }}
-        .stButton > button[kind="primary"]:hover {{
-            opacity: 0.85 !important;
-        }}
+        .stButton > button[kind="primary"]:hover {{ opacity: 0.82 !important; }}
+
+        /* theme toggle button */
         .stButton > button:not([kind="primary"]) {{
             background: var(--bg-card) !important;
             color: var(--text-primary) !important;
             border: 1px solid var(--border) !important;
             border-radius: 8px !important;
             font-family: 'Geist', sans-serif !important;
-            font-weight: 500 !important;
             font-size: 0.82rem !important;
-            transition: border-color 0.15s, background 0.15s !important;
+            transition: border-color 0.15s !important;
+            padding: 0.3rem 0.75rem !important;
         }}
         .stButton > button:not([kind="primary"]):hover {{
-            border-color: var(--accent-blue) !important;
-            background: var(--bg-input) !important;
+            border-color: var(--text-secondary) !important;
         }}
 
-        /* ── Result Cards ── */
+        /* ── Metric boxes ── */
+        [data-testid="metric-container"] {{
+            background: var(--bg-card) !important;
+            border: 1px solid var(--border) !important;
+            border-radius: 10px !important;
+            padding: 1.1rem 1.4rem !important;
+        }}
+        [data-testid="metric-container"] label {{
+            color: var(--text-muted) !important;
+            font-size: 0.7rem !important;
+            font-weight: 600 !important;
+            text-transform: uppercase !important;
+            letter-spacing: 0.09em !important;
+        }}
+        [data-testid="stMetricValue"] {{
+            color: var(--text-primary) !important;
+            font-size: 1.15rem !important;
+            font-weight: 600 !important;
+        }}
+
+        /* ── Result cards ── */
         .result-card {{
             background: var(--bg-card);
             border: 1px solid var(--border);
             border-radius: 10px;
-            padding: 1.75rem 1.5rem;
+            padding: 1.75rem 1.25rem;
             text-align: center;
-            transition: border-color 0.25s, box-shadow 0.25s;
             box-shadow: var(--shadow-sm);
-            height: 100%;
+            transition: box-shadow 0.2s;
         }}
-        .result-card:hover {{
-            box-shadow: var(--shadow);
-        }}
+        .result-card:hover {{ box-shadow: var(--shadow); }}
         .result-card.positive {{
             border-color: var(--accent-green);
-            background: linear-gradient(180deg, var(--accent-glow-g), var(--bg-card));
+            background: linear-gradient(180deg, var(--accent-glow-g), var(--bg-card) 60%);
         }}
         .result-card.negative {{
             border-color: var(--accent-red);
-            background: linear-gradient(180deg, var(--accent-glow-r), var(--bg-card));
+            background: linear-gradient(180deg, var(--accent-glow-r), var(--bg-card) 60%);
         }}
         .result-card .model-name {{
             font-family: 'Geist Mono', monospace;
-            font-size: 0.68rem;
+            font-size: 0.65rem;
             color: var(--text-muted);
             letter-spacing: 0.12em;
             text-transform: uppercase;
-            margin-bottom: 1rem;
+            margin-bottom: 0.9rem;
         }}
         .result-card .sentiment-label {{
-            font-size: 1.5rem;
+            font-size: 1.4rem;
             font-weight: 600;
-            margin-bottom: 0.5rem;
-            letter-spacing: -0.01em;
+            margin-bottom: 0.45rem;
         }}
         .result-card .sentiment-label.positive {{ color: var(--accent-green); }}
         .result-card .sentiment-label.negative {{ color: var(--accent-red); }}
         .result-card .confidence {{
             font-family: 'Geist Mono', monospace;
-            font-size: 0.95rem;
+            font-size: 0.88rem;
             color: var(--text-secondary);
-            margin-bottom: 0.35rem;
+            margin-bottom: 0.3rem;
         }}
         .result-card .latency {{
             font-family: 'Geist Mono', monospace;
-            font-size: 0.68rem;
+            font-size: 0.65rem;
             color: var(--text-muted);
         }}
 
-        /* ── Metric Boxes ── */
-        [data-testid="metric-container"] {{
-            background: var(--bg-card) !important;
-            border: 1px solid var(--border) !important;
-            border-radius: 10px !important;
-            padding: 1.25rem 1.5rem !important;
-        }}
-        [data-testid="metric-container"] label {{
-            color: var(--text-muted) !important;
-            font-size: 0.72rem !important;
-            font-weight: 500 !important;
-            text-transform: uppercase !important;
-            letter-spacing: 0.08em !important;
-        }}
-        [data-testid="metric-container"] [data-testid="stMetricValue"] {{
-            color: var(--text-primary) !important;
-            font-size: 1.2rem !important;
-            font-weight: 600 !important;
-        }}
-
-        /* ── Alerts / Banners ── */
-        .stAlert {{
-            border-radius: 8px !important;
-            border-width: 1px !important;
-        }}
+        /* ── Alerts ── */
+        .stAlert {{ border-radius: 8px !important; }}
         .stSuccess {{
             background: var(--accent-glow-g) !important;
             border-color: var(--accent-green) !important;
-            color: var(--text-primary) !important;
         }}
         .stError {{
             background: var(--accent-glow-r) !important;
             border-color: var(--accent-red) !important;
-            color: var(--text-primary) !important;
         }}
-
-        /* ── Divider ── */
-        hr {{
-            border: none !important;
-            border-top: 1px solid var(--border-subtle) !important;
-            margin: 1.5rem 0 !important;
-        }}
-
-        /* ── Spinner ── */
-        .stSpinner > div {{
-            border-color: var(--accent-blue) transparent transparent transparent !important;
-        }}
-
-        /* ── Toggle ── */
-        .stToggle label {{
-            color: var(--text-secondary) !important;
-            font-size: 0.85rem !important;
+        .stInfo {{
+            background: rgba(88,166,255,0.07) !important;
+            border-color: var(--accent-blue) !important;
+            border-radius: 8px !important;
         }}
 
         /* ── Expander ── */
@@ -349,48 +368,13 @@ def inject_styles(dark: bool):
             border: 1px solid var(--border) !important;
             border-radius: 8px !important;
             color: var(--text-secondary) !important;
-            font-size: 0.82rem !important;
-            font-weight: 500 !important;
+            font-size: 0.8rem !important;
         }}
         .streamlit-expanderContent {{
             background: var(--bg-card) !important;
             border: 1px solid var(--border) !important;
             border-top: none !important;
             border-radius: 0 0 8px 8px !important;
-        }}
-
-        /* ── Info Box ── */
-        .stInfo {{
-            background: rgba(88,166,255,0.08) !important;
-            border-color: var(--accent-blue) !important;
-            color: var(--text-primary) !important;
-            border-radius: 8px !important;
-        }}
-
-        /* ── Sidebar model pills ── */
-        .model-pill {{
-            display: inline-flex;
-            align-items: center;
-            gap: 0.4rem;
-            background: var(--bg-input);
-            border: 1px solid var(--border);
-            border-radius: 6px;
-            padding: 0.3rem 0.7rem;
-            font-size: 0.73rem;
-            color: var(--text-secondary);
-            font-family: 'Geist Mono', monospace;
-            margin: 3px 2px;
-            letter-spacing: 0.03em;
-        }}
-
-        /* ── Section label ── */
-        .section-label {{
-            font-size: 0.72rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.1em;
-            color: var(--text-muted);
-            margin-bottom: 0.75rem;
         }}
 
         /* ── Consensus card ── */
@@ -401,49 +385,97 @@ def inject_styles(dark: bool):
             background: var(--bg-card);
             border: 1px solid var(--border);
             border-radius: 10px;
-            padding: 1.25rem 1.75rem;
-            margin-top: 1.5rem;
+            padding: 1.25rem 1.5rem;
+            margin-top: 1.25rem;
         }}
-        .consensus-card .verdict {{
-            font-size: 1.1rem;
-            font-weight: 600;
-            color: var(--text-primary);
-        }}
-        .consensus-card .tally {{
+        .consensus-icon {{ font-size: 1.5rem; flex-shrink: 0; }}
+        .consensus-verdict {{ font-size: 1rem; font-weight: 600; color: var(--text-primary); }}
+        .consensus-tally {{
             font-family: 'Geist Mono', monospace;
-            font-size: 0.78rem;
+            font-size: 0.72rem;
             color: var(--text-muted);
             margin-top: 0.2rem;
         }}
-        .consensus-icon {{
-            font-size: 1.6rem;
-            flex-shrink: 0;
+
+        /* ── Info section (models + mapping) ── */
+        .info-grid {{
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-top: 2.5rem;
+        }}
+        .info-panel {{
+            background: var(--bg-surface);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 1.25rem 1.5rem;
+        }}
+        .info-panel-title {{
+            font-size: 0.68rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--text-muted);
+            margin-bottom: 1rem;
+        }}
+        .model-row {{
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid var(--border-subtle);
+        }}
+        .model-row:last-child {{ border-bottom: none; }}
+        .model-row-name {{
+            font-size: 0.82rem;
+            color: var(--text-primary);
+            font-weight: 500;
+        }}
+        .model-row-scope {{
+            font-family: 'Geist Mono', monospace;
+            font-size: 0.68rem;
+            color: var(--text-muted);
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 2px 7px;
+        }}
+        .mapping-row {{
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 1rem;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid var(--border-subtle);
+        }}
+        .mapping-row:last-child {{ border-bottom: none; }}
+        .mapping-model {{
+            font-size: 0.8rem;
+            font-weight: 500;
+            color: var(--text-primary);
+            white-space: nowrap;
+        }}
+        .mapping-rule {{
+            font-family: 'Geist Mono', monospace;
+            font-size: 0.68rem;
+            color: var(--text-secondary);
+            text-align: right;
         }}
 
-        /* ── Dataframe ── */
-        .stDataFrame {{
-            border: 1px solid var(--border) !important;
-            border-radius: 8px !important;
-            overflow: hidden !important;
+        /* ── Divider ── */
+        hr {{
+            border: none !important;
+            border-top: 1px solid var(--border-subtle) !important;
+            margin: 1.25rem 0 !important;
         }}
 
-        /* ── Responsive tweaks ── */
-        @media (max-width: 768px) {{
-            .block-container {{
-                padding: 1rem 1rem 3rem !important;
-            }}
-            .app-header {{
-                flex-direction: column;
-                padding: 1.5rem 1.25rem;
-            }}
-            .app-header h1 {{
-                font-size: 1.3rem;
-            }}
-        }}
-
-        /* ── Streamlit top bar hide ── */
-        #MainMenu, footer, header[data-testid="stHeader"] {{
-            display: none !important;
+        /* ── Responsive ── */
+        @media (max-width: 700px) {{
+            .navbar {{ padding: 0 1rem; }}
+            .page-body {{ padding: 1.5rem 1rem 4rem; }}
+            .page-title h1 {{ font-size: 1.35rem; }}
+            .info-grid {{ grid-template-columns: 1fr; }}
+            .live-badge {{ display: none; }}
         }}
         </style>
         """,
@@ -476,26 +508,18 @@ LABEL_EMOJI = {"POSITIVE": "↑", "NEGATIVE": "↓"}
 
 def unify_label(raw_label: str, model_name: str) -> str:
     label = raw_label.strip().upper()
-
     if model_name == "DistilBERT":
         return label
-
     elif model_name == "RoBERTa":
-        mapping = {
-            "LABEL_0": "NEGATIVE",
-            "LABEL_1": "NEGATIVE",
-            "LABEL_2": "POSITIVE",
-        }
+        mapping = {"LABEL_0": "NEGATIVE", "LABEL_1": "NEGATIVE", "LABEL_2": "POSITIVE"}
         if label not in mapping:
             raise ValueError(f"Unexpected RoBERTa label: '{raw_label}'")
         return mapping[label]
-
     elif model_name == "BERT":
         digit_str = label.split()[0]
         if not digit_str.isdigit():
             raise ValueError(f"Unexpected BERT label: '{raw_label}'")
         return "POSITIVE" if int(digit_str) >= 4 else "NEGATIVE"
-
     else:
         raise ValueError(f"Unknown model name: '{model_name}'")
 
@@ -516,8 +540,7 @@ def load_pipeline(model_name: str):
         )
     except Exception as exc:
         raise RuntimeError(
-            f"Failed to load model '{model_name}' ({model_id}).\n"
-            f"Check your internet connection or model ID.\nDetails: {exc}"
+            f"Failed to load '{model_name}' ({model_id}). Details: {exc}"
         )
 
 
@@ -526,34 +549,27 @@ def load_pipeline(model_name: str):
 # ─────────────────────────────────────────────
 
 def predict(text: str, model_name: str) -> tuple[str, float, float]:
-    pipe   = load_pipeline(model_name)
-    start  = time.time()
-    result = pipe(text)[0]
+    pipe    = load_pipeline(model_name)
+    start   = time.time()
+    result  = pipe(text)[0]
     elapsed = time.time() - start
-
     unified    = unify_label(result["label"], model_name)
     confidence = round(result["score"] * 100, 2)
     return unified, confidence, elapsed
 
 
 # ─────────────────────────────────────────────
-# Render a single result card
+# Result Card
 # ─────────────────────────────────────────────
 
-def render_result_card(
-    model_name: str,
-    label: str,
-    confidence: float,
-    elapsed: float,
-) -> None:
-    css_class = label.lower()
-    emoji     = LABEL_EMOJI[label]
-
+def render_result_card(model_name, label, confidence, elapsed):
+    css  = label.lower()
+    emoji = LABEL_EMOJI[label]
     st.markdown(
         f"""
-        <div class="result-card {css_class}">
+        <div class="result-card {css}">
             <div class="model-name">{model_name}</div>
-            <div class="sentiment-label {css_class}">{emoji} {label}</div>
+            <div class="sentiment-label {css}">{emoji} {label}</div>
             <div class="confidence">{confidence:.2f}%</div>
             <div class="latency">⏱ {elapsed * 1000:.0f} ms</div>
         </div>
@@ -563,111 +579,84 @@ def render_result_card(
 
 
 # ─────────────────────────────────────────────
-# Inject styles based on current theme
+# Inject styles
 # ─────────────────────────────────────────────
 
 inject_styles(st.session_state.dark_mode)
 
 
 # ─────────────────────────────────────────────
-# Sidebar
+# Navbar  (pure HTML — rendered once at top)
 # ─────────────────────────────────────────────
 
-with st.sidebar:
-    # ── Theme Toggle ──────────────────────────
-    col_logo, col_theme = st.columns([3, 1])
-
-    with col_logo:
-        st.markdown(
-            "<p style='font-weight:600;font-size:0.95rem;margin:0;'>Sentiment Classifier</p>"
-            "<p style='color:var(--text-muted);font-size:0.72rem;font-family:Geist Mono,monospace;margin:0;'>v2.0</p>",
-            unsafe_allow_html=True,
-        )
-
-    with col_theme:
-        theme_label = "☀️" if st.session_state.dark_mode else "🌙"
-        if st.button(theme_label, key="theme_toggle", help="Toggle light / dark mode"):
-            st.session_state.dark_mode = not st.session_state.dark_mode
-            st.rerun()
-
-    st.markdown("---")
-
-    # ── Models ────────────────────────────────
-    st.markdown('<p class="section-label">Models</p>', unsafe_allow_html=True)
-
-    model_meta = [
-        ("DistilBERT (SST-2)", "distilbert", "English"),
-        ("RoBERTa (Twitter)",  "roberta",    "Social"),
-        ("BERT Multilingual",  "bert-multi", "Multilingual"),
-    ]
-    for name, tag, scope in model_meta:
-        st.markdown(
-            f'<span class="model-pill">◈ {name}</span>',
-            unsafe_allow_html=True,
-        )
-
-    st.markdown("---")
-
-    # ── Label Mapping ─────────────────────────
-    st.markdown('<p class="section-label">Label Mapping</p>', unsafe_allow_html=True)
-    st.markdown(
-        """
-        | Model | Raw → Unified |
-        |---|---|
-        | DistilBERT | POS / NEG |
-        | RoBERTa | L0,L1→NEG · L2→POS |
-        | BERT | 1–3★→NEG · 4–5★→POS |
-        """,
-        unsafe_allow_html=True,
-    )
-
-    st.markdown("---")
-
-    compare_mode = st.toggle(
-        "Compare all models",
-        value=False,
-        help="Run all three models simultaneously and display results in columns.",
-    )
-
-    st.markdown("---")
-    st.caption("Models are loaded once and cached per session.")
-
-
-# ─────────────────────────────────────────────
-# Header
-# ─────────────────────────────────────────────
+theme_icon = "☀️" if st.session_state.dark_mode else "🌙"
+theme_tip  = "Switch to light mode" if st.session_state.dark_mode else "Switch to dark mode"
 
 st.markdown(
-    """
-    <div class="app-header">
-        <div>
-            <h1>Sentiment Analysis</h1>
-            <p>DistilBERT · RoBERTa · BERT Multilingual — Hugging Face Transformers</p>
+    f"""
+    <div class="navbar">
+        <div class="navbar-left">
+            <span class="navbar-brand">Sentiment Classifier</span>
+            <span class="navbar-version">v2.0</span>
         </div>
-        <div style="display:flex;flex-direction:column;gap:0.4rem;align-items:flex-end;flex-shrink:0;">
-            <span class="header-badge"><span class="dot"></span>Live Inference</span>
-            <span class="header-badge">3 Models Available</span>
+        <div class="navbar-right">
+            <span class="live-badge">
+                <span class="live-dot"></span>Live Inference
+            </span>
         </div>
     </div>
     """,
     unsafe_allow_html=True,
 )
 
+# Theme toggle — sits in a 0-padding column trick to float right of navbar
+# We place it right after the navbar HTML so Streamlit stacks it there.
+# Use a fixed-width right-aligned container via columns.
+_, theme_col = st.columns([11, 1])
+with theme_col:
+    if st.button(theme_icon, help=theme_tip, key="theme_btn"):
+        st.session_state.dark_mode = not st.session_state.dark_mode
+        st.rerun()
+
 
 # ─────────────────────────────────────────────
-# Input Section
+# Page Body wrapper open
+# ─────────────────────────────────────────────
+
+st.markdown('<div class="page-body">', unsafe_allow_html=True)
+
+# ── Page title ────────────────────────────────
+st.markdown(
+    """
+    <div class="page-title">
+        <h1>Sentiment Analysis</h1>
+        <p>DistilBERT · RoBERTa · BERT Multilingual — Hugging Face Transformers</p>
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
+
+# ─────────────────────────────────────────────
+# Input
 # ─────────────────────────────────────────────
 
 user_text = st.text_area(
     label="Text to analyse",
-    placeholder="e.g.  'The movie was absolutely wonderful — I loved every minute of it!'",
+    placeholder="e.g. 'The movie was absolutely wonderful — I loved every minute of it!'",
     height=110,
     key="user_text_input",
 )
 
-col_select, col_btn = st.columns([3, 1])
+col_left, col_toggle, col_btn = st.columns([3, 2, 1])
 
-with col_select:
+with col_left:
+    compare_mode = st.toggle(
+        "Compare all models",
+        value=False,
+        help="Run all three models simultaneously.",
+    )
+
+with col_left:
     if not compare_mode:
         selected_display = st.selectbox(
             "Model",
@@ -679,12 +668,8 @@ with col_select:
         st.info("Compare mode — all three models will run on submit.")
 
 with col_btn:
-    st.markdown("<br>", unsafe_allow_html=True)
-    predict_clicked = st.button(
-        "Run →",
-        type="primary",
-        use_container_width=True,
-    )
+    st.markdown("<br><br>", unsafe_allow_html=True)
+    predict_clicked = st.button("Run →", type="primary", use_container_width=True)
 
 
 # ─────────────────────────────────────────────
@@ -696,14 +681,13 @@ if predict_clicked:
     if not user_text or not user_text.strip():
         st.warning("Please enter some text before clicking Run.")
         st.stop()
-
     if len(user_text.strip()) < 3:
         st.warning("Input is too short for meaningful sentiment analysis.")
         st.stop()
 
     st.markdown("---")
 
-    # ── Single-model mode ─────────────────────
+    # ── Single model ──────────────────────────
     if not compare_mode:
         with st.spinner(f"Running {selected_model}…"):
             try:
@@ -721,36 +705,32 @@ if predict_clicked:
 
         if label == "POSITIVE":
             st.success(
-                f"**{selected_model}** → **POSITIVE** with **{confidence:.2f}%** confidence "
-                f"· {elapsed * 1000:.0f} ms"
+                f"**{selected_model}** → **POSITIVE** · {confidence:.2f}% confidence · {elapsed*1000:.0f} ms"
             )
         else:
             st.error(
-                f"**{selected_model}** → **NEGATIVE** with **{confidence:.2f}%** confidence "
-                f"· {elapsed * 1000:.0f} ms"
+                f"**{selected_model}** → **NEGATIVE** · {confidence:.2f}% confidence · {elapsed*1000:.0f} ms"
             )
 
         with st.expander("Raw prediction details"):
             pipe = load_pipeline(selected_model)
             raw  = pipe(user_text)[0]
-            st.json(
-                {
-                    "model"          : MODEL_CONFIG[selected_model],
-                    "raw_label"      : raw["label"],
-                    "raw_score"      : round(raw["score"], 6),
-                    "unified_label"  : label,
-                    "confidence_pct" : confidence,
-                    "inference_ms"   : round(elapsed * 1000, 1),
-                }
-            )
+            st.json({
+                "model"         : MODEL_CONFIG[selected_model],
+                "raw_label"     : raw["label"],
+                "raw_score"     : round(raw["score"], 6),
+                "unified_label" : label,
+                "confidence_pct": confidence,
+                "inference_ms"  : round(elapsed * 1000, 1),
+            })
 
-    # ── Compare-all mode ──────────────────────
+    # ── Compare all ───────────────────────────
     else:
         st.markdown(
-            '<p class="section-label" style="margin-bottom:1rem;">All-Model Results</p>',
+            '<p style="font-size:0.7rem;font-weight:600;text-transform:uppercase;'
+            'letter-spacing:0.1em;color:var(--text-muted);margin-bottom:1rem;">All-Model Results</p>',
             unsafe_allow_html=True,
         )
-
         model_keys = list(MODEL_CONFIG.keys())
         cols       = st.columns(len(model_keys), gap="medium")
         results    = {}
@@ -765,7 +745,6 @@ if predict_clicked:
                     except RuntimeError as err:
                         st.error(f"{model_name} failed:\n{err}")
 
-        # ── Consensus ─────────────────────────
         if results:
             labels_list = [v[0] for v in results.values()]
             pos_count   = labels_list.count("POSITIVE")
@@ -773,26 +752,20 @@ if predict_clicked:
             total       = len(model_keys)
 
             if pos_count == total:
-                icon    = "✓"
-                verdict = "Unanimous — POSITIVE"
-                color   = "var(--accent-green)"
+                icon, verdict, color = "✓", "Unanimous — POSITIVE", "var(--accent-green)"
             elif neg_count == total:
-                icon    = "✗"
-                verdict = "Unanimous — NEGATIVE"
-                color   = "var(--accent-red)"
+                icon, verdict, color = "✗", "Unanimous — NEGATIVE", "var(--accent-red)"
             else:
-                icon    = "≈"
                 majority = "POSITIVE" if pos_count > neg_count else "NEGATIVE"
-                verdict = f"Split — majority {majority}"
-                color   = "var(--accent-orange)"
+                icon, verdict, color = "≈", f"Split — majority {majority}", "var(--accent-orange)"
 
             st.markdown(
                 f"""
                 <div class="consensus-card">
                     <div class="consensus-icon" style="color:{color};">{icon}</div>
                     <div>
-                        <div class="verdict">{verdict}</div>
-                        <div class="tally">{pos_count} positive · {neg_count} negative across {total} models</div>
+                        <div class="consensus-verdict">{verdict}</div>
+                        <div class="consensus-tally">{pos_count} positive · {neg_count} negative across {total} models</div>
                     </div>
                 </div>
                 """,
@@ -801,17 +774,58 @@ if predict_clicked:
 
             with st.expander("Comparison table"):
                 import pandas as pd
-
-                table = pd.DataFrame(
-                    [
-                        {
-                            "Model"        : name,
-                            "Model ID"     : MODEL_CONFIG[name],
-                            "Sentiment"    : f"{LABEL_EMOJI[lbl]} {lbl}",
-                            "Confidence"   : f"{conf:.2f}%",
-                            "Latency (ms)" : f"{elap * 1000:.0f}",
-                        }
-                        for name, (lbl, conf, elap) in results.items()
-                    ]
-                )
+                table = pd.DataFrame([
+                    {
+                        "Model"        : name,
+                        "Model ID"     : MODEL_CONFIG[name],
+                        "Sentiment"    : f"{LABEL_EMOJI[lbl]} {lbl}",
+                        "Confidence"   : f"{conf:.2f}%",
+                        "Latency (ms)" : f"{elap * 1000:.0f}",
+                    }
+                    for name, (lbl, conf, elap) in results.items()
+                ])
                 st.dataframe(table, use_container_width=True, hide_index=True)
+
+
+# ─────────────────────────────────────────────
+# Info Section — Models & Label Mapping
+# ─────────────────────────────────────────────
+
+st.markdown(
+    """
+    <div class="info-grid">
+        <div class="info-panel">
+            <div class="info-panel-title">Available Models</div>
+            <div class="model-row">
+                <span class="model-row-name">DistilBERT (SST-2)</span>
+                <span class="model-row-scope">English</span>
+            </div>
+            <div class="model-row">
+                <span class="model-row-name">RoBERTa (Twitter)</span>
+                <span class="model-row-scope">Social</span>
+            </div>
+            <div class="model-row">
+                <span class="model-row-name">BERT Multilingual</span>
+                <span class="model-row-scope">Multilingual</span>
+            </div>
+        </div>
+        <div class="info-panel">
+            <div class="info-panel-title">Label Mapping</div>
+            <div class="mapping-row">
+                <span class="mapping-model">DistilBERT</span>
+                <span class="mapping-rule">POSITIVE / NEGATIVE</span>
+            </div>
+            <div class="mapping-row">
+                <span class="mapping-model">RoBERTa</span>
+                <span class="mapping-rule">L0,L1 → NEG &nbsp;·&nbsp; L2 → POS</span>
+            </div>
+            <div class="mapping-row">
+                <span class="mapping-model">BERT</span>
+                <span class="mapping-rule">1–3★ → NEG &nbsp;·&nbsp; 4–5★ → POS</span>
+            </div>
+        </div>
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
+st.markdown('</div>', unsafe_allow_html=True)  # close .page-body
